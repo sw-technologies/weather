@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast Lookup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        .input-group {
+            display: flex;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 20px;
+            border: 1px solid #cbd5e0;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: #4299e1;
+        }
+        button {
+            background-color: #4299e1;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            background-color: #3182ce;
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 5px;
+        }
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        .forecast-card {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+        .forecast-card:hover {
+            transform: translateY(-3px);
+        }
+        .forecast-card h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c5282;
+            margin-bottom: 8px;
+        }
+        .forecast-card p {
+            font-size: 0.95rem;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        .forecast-card .temp-high {
+            color: #e53e3e;
+            font-weight: 700;
+        }
+        .forecast-card .temp-low {
+            color: #4299e1;
+            font-weight: 700;
+        }
+        #forecast-display, #discussion-display {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        #forecast-display.active, #discussion-display.active {
+            text-align: left;
+            align-items: flex-start;
+            color: #333;
+            font-style: normal;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #4299e1;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            z-index: 1000;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .message-box p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        .message-box button {
+            background-color: #4299e1;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            box-shadow: none; /* Override default button shadow */
+        }
+        .message-box button:hover {
+            background-color: #3182ce;
+            transform: none; /* Override default button hover transform */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>National Weather Forecast</h1>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="location-input" placeholder="Enter city, zip code, or address (e.g., New York, NY or 10001)">
+                <button id="get-forecast-btn">Get Forecast</button>
+            </div>
+        </div>
+
+        <div id="loading-indicator" class="hidden loading-spinner"></div>
+
+        <div>
+            <h2 class="section-title">5-Day Forecast</h2>
+            <div id="forecast-display" class="forecast-grid">
+                <p>Enter a location and click "Get Forecast" to see the weather.</p>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="section-title">Meteorologist's Discussion</h2>
+            <div id="discussion-display">
+                <p>A detailed discussion of the forecast will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules for authentication and Firestore
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase and user ID
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        // !!! IMPORTANT: Replace 'YOUR_GOOGLE_MAPS_API_KEY' with your actual Google Maps API Key !!!
+        // You need to enable the Geocoding API in your Google Cloud project.
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyAR2bCBVbAKpFbbzJQK3ZO-gzYwe1N-jMU';
+
+        // Function to show a custom message box instead of alert()
+        function showMessageBox(message) {
+            const existingMessageBox = document.querySelector('.message-box');
+            if (existingMessageBox) {
+                existingMessageBox.remove();
+            }
+
+            const messageBox = document.createElement('div');
+            messageBox.className = 'message-box';
+            messageBox.innerHTML = `
+                <p>${message}</p>
+                <button id="close-message-box">OK</button>
+            `;
+            document.body.appendChild(messageBox);
+
+            document.getElementById('close-message-box').onclick = () => {
+                messageBox.remove();
+            };
+        }
+
+        // Initialize Firebase
+        function initializeFirebase() {
+            try {
+                // __app_id and __firebase_config are provided by the Canvas environment
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-weather-app';
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.error("Firebase config is missing. Cannot initialize Firebase.");
+                    showMessageBox("Application error: Firebase configuration is missing. Please contact support.");
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate user
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated with Firebase. User ID:", userId);
+                    } else {
+                        try {
+                            // __initial_auth_token is provided by the Canvas environment for custom authentication
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                                userId = auth.currentUser?.uid;
+                                console.log("Signed in with custom token. User ID:", userId);
+                            } else {
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser?.uid;
+                                console.log("Signed in anonymously. User ID:", userId);
+                            }
+                        } catch (error) {
+                            console.error("Firebase authentication error:", error);
+                            showMessageBox("Authentication failed. Please try again later.");
+                        }
+                    }
+                    isAuthReady = true; // Mark authentication as ready
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessageBox("Failed to initialize Firebase. Please check your internet connection.");
+            }
+        }
+
+        // Call Firebase initialization on window load
+        window.onload = initializeFirebase;
+
+        const locationInput = document.getElementById('location-input');
+        const getForecastBtn = document.getElementById('get-forecast-btn');
+        const forecastDisplay = document.getElementById('forecast-display');
+        const discussionDisplay = document.getElementById('discussion-display');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Function to get coordinates using Google Maps Geocoding API
+        async function getCoordinates(location) {
+            // Check if input is already lat,lon format
+            const latLonMatch = location.match(/^(-?\d+\.?\d*),(-?\d+\.?\d*)$/);
+            if (latLonMatch) {
+                return { latitude: parseFloat(latLonMatch[1]), longitude: parseFloat(latLonMatch[2]) };
+            }
+
+            if (GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY' || !GOOGLE_MAPS_API_KEY) {
+                showMessageBox("Google Maps API Key is missing. Please replace 'YOUR_GOOGLE_MAPS_API_KEY' in the code with your actual key.");
+                return null;
+            }
+
+            const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${GOOGLE_MAPS_API_KEY}`;
+
+            try {
+                const response = await fetch(geocodingUrl);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Google Geocoding API error: ${response.status} - ${errorText}`);
+                }
+                const data = await response.json();
+
+                if (data.status === 'OK' && data.results.length > 0) {
+                    const { lat, lng } = data.results[0].geometry.location;
+                    return { latitude: lat, longitude: lng };
+                } else if (data.status === 'ZERO_RESULTS') {
+                    showMessageBox(`No results found for "${location}". Please try a different location.`);
+                    return null;
+                } else {
+                    throw new Error(`Geocoding API status: ${data.status} - ${data.error_message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error("Error geocoding location:", error);
+                showMessageBox(`Failed to get coordinates: ${error.message}. Please check your input and API key.`);
+                return null;
+            }
+        }
+
+        async function fetchWeatherData(latitude, longitude) {
+            const NWS_BASE_URL = 'https://api.weather.gov';
+            const USER_AGENT = '(my-weather-app, contact@example.com)'; // NWS requires a User-Agent
+
+            try {
+                // Step 1: Get grid points
+                const pointsUrl = `${NWS_BASE_URL}/points/${latitude},${longitude}`;
+                const pointsResponse = await fetch(pointsUrl, {
+                    headers: { 'User-Agent': USER_AGENT }
+                });
+
+                if (!pointsResponse.ok) {
+                    const errorText = await pointsResponse.text();
+                    throw new Error(`NWS Points API error: ${pointsResponse.status} - ${errorText}`);
+                }
+                const pointsData = await pointsResponse.json();
+
+                const forecastUrl = pointsData.properties.forecast; // This URL provides the 7-day forecast
+
+                // Step 2: Get forecast
+                const forecastResponse = await fetch(forecastUrl, {
+                    headers: { 'User-Agent': USER_AGENT }
+                });
+
+                if (!forecastResponse.ok) {
+                    const errorText = await forecastResponse.text();
+                    throw new Error(`NWS Forecast API error: ${forecastResponse.status} - ${errorText}`);
+                }
+                const forecastData = await forecastResponse.json();
+
+                return forecastData.properties.periods; // Array of forecast periods
+            } catch (error) {
+                console.error("Error fetching weather data:", error);
+                showMessageBox(`Failed to fetch weather data: ${error.message}. Please try again or check your input.`);
+                return null;
+            }
+        }
+
+        function displayForecast(periods) {
+            forecastDisplay.innerHTML = '';
+            forecastDisplay.classList.add('active');
+
+            if (!periods || periods.length === 0) {
+                forecastDisplay.innerHTML = '<p>No forecast data available for this location.</p>';
+                return;
+            }
+
+            // Display up to 5 days (10 periods as NWS provides day/night periods)
+            // We'll aim for 5 distinct days, so we'll iterate and pick the "day" periods
+            const dailyForecasts = [];
+            let displayedDays = 0;
+
+            for (let i = 0; i < periods.length && displayedDays < 5; i++) {
+                const period = periods[i];
+                // Only take the 'day' period for a simplified 5-day view, or if it's the first period
+                // and it's a 'night' period, we still want to show it.
+                if (period.isDaytime || i === 0) {
+                    const dayName = new Date(period.startTime).toLocaleDateString('en-US', { weekday: 'short' });
+                    const date = new Date(period.startTime).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+
+                    dailyForecasts.push(`
+                        <div class="forecast-card">
+                            <h3>${dayName} ${date}</h3>
+                            <p>${period.temperature}&deg;${period.temperatureUnit} ${period.temperatureTrend ? `(${period.temperatureTrend})` : ''}</p>
+                            <p>${period.shortForecast}</p>
+                            <p class="text-xs text-gray-500">${period.windSpeed} ${period.windDirection} wind</p>
+                        </div>
+                    `);
+                    displayedDays++;
+                }
+            }
+            forecastDisplay.innerHTML = dailyForecasts.join('');
+        }
+
+
+        async function generateForecastDiscussion(forecastData) {
+            discussionDisplay.innerHTML = '<div class="loading-spinner"></div>';
+            discussionDisplay.classList.remove('active');
+
+            const prompt = `
+                Act as a National Weather Service meteorologist. Provide a concise, professional, and easy-to-understand 5-day weather forecast discussion based on the following data. Focus on key weather patterns, temperature trends, precipitation chances, and any significant weather events. Avoid technical jargon where possible, but maintain a meteorologist's tone.
+
+                Forecast Data (JSON):
+                ${JSON.stringify(forecastData, null, 2)}
+            `;
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Canvas will automatically provide the API key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`Gemini API error: ${response.status} - ${JSON.stringify(errorBody)}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    discussionDisplay.innerHTML = `<p class="text-left">${text}</p>`;
+                    discussionDisplay.classList.add('active');
+                } else {
+                    discussionDisplay.innerHTML = '<p>Could not generate a forecast discussion. Please try again.</p>';
+                    console.error("Gemini API response structure unexpected:", result);
+                }
+            } catch (error) {
+                console.error("Error generating forecast discussion:", error);
+                discussionDisplay.innerHTML = `<p>Error generating discussion: ${error.message}.</p>`;
+            }
+        }
+
+        getForecastBtn.addEventListener('click', async () => {
+            const location = locationInput.value.trim();
+            if (!location) {
+                showMessageBox("Please enter a location (city, zip code, or address).");
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            forecastDisplay.innerHTML = '<p>Fetching forecast...</p>';
+            forecastDisplay.classList.remove('active');
+            discussionDisplay.innerHTML = '<p>Generating discussion...</p>';
+            discussionDisplay.classList.remove('active');
+
+            try {
+                const coordinates = await getCoordinates(location);
+                if (!coordinates) {
+                    loadingIndicator.classList.add('hidden');
+                    forecastDisplay.innerHTML = '<p>Please enter a valid location.</p>';
+                    discussionDisplay.innerHTML = '<p>A detailed discussion of the forecast will appear here.</p>';
+                    return;
+                }
+
+                const { latitude, longitude } = coordinates;
+                const forecastPeriods = await fetchWeatherData(latitude, longitude);
+
+                if (forecastPeriods) {
+                    displayForecast(forecastPeriods);
+                    await generateForecastDiscussion(forecastPeriods.slice(0, 10)); // Pass first 10 periods (5 days) for discussion
+                } else {
+                    forecastDisplay.innerHTML = '<p>Failed to retrieve weather data.</p>';
+                    discussionDisplay.innerHTML = '<p>Failed to retrieve weather data for discussion.</p>';
+                }
+            } catch (error) {
+                console.error("Overall forecast process error:", error);
+                showMessageBox(`An error occurred: ${error.message}`);
+                forecastDisplay.innerHTML = '<p>An error occurred while fetching the forecast.</p>';
+                discussionDisplay.innerHTML = '<p>An error occurred while generating the discussion.</p>';
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
