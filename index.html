@@ -15,28 +15,38 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 1rem; /* Reduced padding for mobile */
+            padding: 1rem;
             box-sizing: border-box;
         }
         .container {
             background-color: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(12px) saturate(180%);
             -webkit-backdrop-filter: blur(12px) saturate(180%);
-            border: 1px solid rgba(226, 232, 240, 0.5); /* slate-200 */
+            border: 1px solid rgba(226, 232, 240, 0.5);
             border-radius: 24px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem; /* Reduced padding for mobile */
+            padding: 1.5rem;
             width: 100%;
             max-width: 900px;
-            margin-top: 1rem; /* Reduced margin for mobile */
+            margin-top: 1rem;
             display: flex;
             flex-direction: column;
             gap: 2rem;
         }
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo {
+            width: 80px;
+            height: auto;
+        }
         h1 {
-            font-size: 2.5rem; /* Reduced font size for mobile */
+            font-size: 2.5rem;
             font-weight: 800;
-            color: #0f172a; /* slate-900 */
+            color: #0f172a;
             text-align: center;
             letter-spacing: -0.025em;
         }
@@ -56,7 +66,7 @@
             background-color: rgba(255, 255, 255, 0.8);
             font-size: 1rem;
             outline: none;
-            color: #334155; /* slate-700 */
+            color: #334155;
         }
         button {
             background: linear-gradient(45deg, #2563eb, #3b82f6);
@@ -70,7 +80,7 @@
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
         .section-title {
-            font-size: 1.75rem; /* Reduced font size for mobile */
+            font-size: 1.75rem;
             font-weight: 700;
             color: #1e293b;
             margin-bottom: 1.5rem;
@@ -99,8 +109,46 @@
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
         }
-        #discussion-display.active p {
-            line-height: 1.6;
+        .weather-icon {
+            width: 60px;
+            height: 60px;
+        }
+        .temp {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .short-desc {
+            font-size: 0.9rem;
+            color: #475569;
+            min-height: 40px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            z-index: 1000;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #e2e8f0;
         }
         
         /* Desktop and larger screen adjustments */
@@ -110,6 +158,7 @@
                 padding: 2.5rem 3rem;
                 margin-top: 2rem;
             }
+            .logo { width: 100px; }
             h1 { font-size: 3.5rem; }
             .section-title { font-size: 2rem; }
             .forecast-grid { gap: 1.5rem; }
@@ -118,7 +167,20 @@
 </head>
 <body>
     <div class="container">
-        <h1>America's Weather</h1>
+        <div class="header">
+            <svg class="logo" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#60a5fa;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M 10 60 C 20 40, 40 35, 60 50 C 70 30, 90 30, 110 50 C 130 40, 150 50, 170 60 C 190 80, 160 100, 130 95 C 100 110, 80 90, 50 95 C 20 100, 0 80, 10 60 Z" fill="url(#skyGradient)"/>
+                <circle cx="155" cy="35" r="20" fill="#facc15"/>
+                <path d="M 10 60 C 20 40, 40 35, 60 50 C 70 30, 90 30, 110 50 C 115 45, 125 45, 135 52 C 125 60, 110 65, 100 60 C 80 70, 60 65, 50 60 C 40 65, 30 65, 20 60 C 15 65, 10 65, 10 60 Z" fill="#fff" opacity="0.5"/>
+            </svg>
+            <h1>America's Weather</h1>
+        </div>
 
         <div class="flex justify-center">
             <div class="input-group">
@@ -133,13 +195,6 @@
             <h2 class="section-title">5-Day Forecast</h2>
             <div id="forecast-display" class="forecast-grid">
                 <p>Getting forecast for your location...</p>
-            </div>
-        </div>
-
-        <div>
-            <h2 class="section-title">Meteorologist's Discussion</h2>
-            <div id="discussion-display">
-                <p>A detailed discussion will appear here.</p>
             </div>
         </div>
     </div>
@@ -157,25 +212,18 @@
         const locationInput = document.getElementById('location-input');
         const getForecastBtn = document.getElementById('get-forecast-btn');
         const forecastDisplay = document.getElementById('forecast-display');
-        const discussionDisplay = document.getElementById('discussion-display');
         const loadingIndicator = document.getElementById('loading-indicator');
 
-        /**
-         * Shows a custom message box.
-         */
         function showMessageBox(message) {
             const existing = document.querySelector('.message-box');
             if (existing) existing.remove();
             const box = document.createElement('div');
             box.className = 'message-box';
-            box.innerHTML = `<p>${message}</p><button id="close-message-box">OK</button>`;
+            box.innerHTML = `<p>${message}</p><button id="close-message-box" class="px-4 py-2 bg-blue-500 text-white rounded-lg">OK</button>`;
             document.body.appendChild(box);
             document.getElementById('close-message-box').onclick = () => box.remove();
         }
 
-        /**
-         * Initializes Firebase for authentication.
-         */
         async function initializeFirebase() {
             try {
                 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
@@ -185,26 +233,21 @@
                 }
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                await new Promise((resolve, reject) => {
+                await new Promise((resolve) => {
                     onAuthStateChanged(auth, async (user) => {
                         if (user) {
                             userId = user.uid;
-                            resolve();
                         } else {
                             try {
                                 const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                                if (token) {
-                                    await signInWithCustomToken(auth, token);
-                                } else {
-                                    await signInAnonymously(auth);
-                                }
+                                if (token) await signInWithCustomToken(auth, token);
+                                else await signInAnonymously(auth);
                                 userId = auth.currentUser?.uid;
-                                resolve();
                             } catch (error) {
                                 console.error("Firebase auth error:", error);
-                                reject(error);
                             }
                         }
+                        resolve();
                     });
                 });
             } catch (error) {
@@ -212,9 +255,6 @@
             }
         }
 
-        /**
-         * Converts a location string into latitude and longitude.
-         */
         async function getCoordinates(location) {
             if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
                 showMessageBox("Google Maps API Key is missing.");
@@ -238,9 +278,6 @@
             }
         }
 
-        /**
-         * Fetches weather data from the NWS API for given coordinates.
-         */
         async function fetchWeatherData(latitude, longitude) {
             const USER_AGENT = '(my-weather-app, contact@example.com)';
             try {
@@ -261,9 +298,6 @@
             }
         }
 
-        /**
-         * Selects an appropriate SVG weather icon based on the forecast.
-         */
         function getWeatherIcon(shortForecast) {
             const forecast = shortForecast.toLowerCase();
             const icons = {
@@ -285,12 +319,8 @@
             return icons.cloud;
         }
 
-        /**
-         * Renders the 5-day forecast into the display grid.
-         */
         function displayForecast(periods) {
             forecastDisplay.innerHTML = '';
-            forecastDisplay.classList.add('active');
             if (!periods) {
                 forecastDisplay.innerHTML = '<p>No forecast data available.</p>';
                 return;
@@ -313,58 +343,23 @@
             }
             forecastDisplay.innerHTML = dailyForecasts.join('');
         }
-
-        /**
-         * Generates a narrative forecast discussion using the Gemini API.
-         */
-        async function generateForecastDiscussion(forecastData) {
-            discussionDisplay.innerHTML = '<div class="loading-spinner"></div>';
-            discussionDisplay.classList.remove('active');
-            const prompt = `Act as a National Weather Service meteorologist. Provide a concise, professional, and easy-to-understand 5-day weather forecast discussion based on the following data. Focus on key weather patterns, temperature trends, precipitation chances, and any significant weather events. Avoid overly technical jargon. Maintain a professional, clear tone. Format the output as a single, well-written paragraph.\n\nForecast Data (JSON):\n${JSON.stringify(forecastData, null, 2)}`;
-            try {
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
-                const result = await response.json();
-                const text = result.candidates[0].content.parts[0].text;
-                discussionDisplay.innerHTML = `<p>${text}</p>`;
-                discussionDisplay.classList.add('active');
-            } catch (error) {
-                console.error("Error generating discussion:", error);
-                discussionDisplay.innerHTML = '<p>Could not generate forecast discussion.</p>';
-            }
-        }
         
-        /**
-         * Core function to fetch and display all weather data for given coordinates.
-         */
         async function fetchAndDisplayWeather(latitude, longitude) {
             loadingIndicator.classList.remove('hidden');
             forecastDisplay.innerHTML = '';
-            discussionDisplay.innerHTML = '';
             
             try {
                 const forecastPeriods = await fetchWeatherData(latitude, longitude);
-                if (forecastPeriods) {
-                    displayForecast(forecastPeriods);
-                    await generateForecastDiscussion(forecastPeriods.slice(0, 10));
-                } else {
-                    forecastDisplay.innerHTML = '<p>Could not retrieve forecast.</p>';
-                    discussionDisplay.innerHTML = '<p>Discussion unavailable.</p>';
-                }
+                displayForecast(forecastPeriods);
             } catch (error) {
                 console.error("Weather display error:", error);
                 showMessageBox(`An error occurred: ${error.message}`);
+                forecastDisplay.innerHTML = '<p>Could not retrieve forecast.</p>';
             } finally {
                 loadingIndicator.classList.add('hidden');
             }
         }
 
-        /**
-         * Handles the user-initiated forecast lookup via the input field and button.
-         */
         async function handleManualForecast() {
             const location = locationInput.value.trim();
             if (!location) {
@@ -377,10 +372,8 @@
             }
         }
 
-        /**
-         * On page load, attempts to get location from IP and fetch forecast.
-         */
         async function getInitialLocationForecast() {
+            loadingIndicator.classList.remove('hidden');
             try {
                 const response = await fetch('https://ip-api.com/json');
                 if (!response.ok) throw new Error('IP API failed');
@@ -394,7 +387,8 @@
             } catch (error) {
                 console.log("Could not get location from IP:", error.message);
                 forecastDisplay.innerHTML = '<p>Could not automatically determine your location. Please enter one above.</p>';
-                discussionDisplay.innerHTML = '<p>A detailed discussion will appear here.</p>';
+            } finally {
+                loadingIndicator.classList.add('hidden');
             }
         }
 
