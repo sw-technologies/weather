@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Best Friends Weather</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --bg-color: #eef2f7;
@@ -46,18 +47,17 @@
 
         #status { color: #666; font-style: italic; margin-bottom: 15px; }
         
-        /* Forecast Grid */
         #forecast-display { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
         .forecast-card { background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.1); padding: 15px; border-radius: 10px; width: 140px; }
         [data-theme="dark"] .forecast-card { background: rgba(255,255,255,0.05); }
 
-        /* Detailed List */
+        /* CLEAN RADAR MAP STYLES */
+        #radarMap { width: 100%; height: 500px; border: 1px solid #ccc; border-radius: 10px; margin-top: 20px; z-index: 1; }
+
         #detailed-forecast { margin-top: 30px; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto; }
         .detail-row { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); display: grid; grid-template-columns: 120px 1fr; gap: 15px; }
         [data-theme="dark"] .detail-row { border-bottom: 1px solid rgba(255,255,255,0.1); }
         .detail-day { font-weight: bold; color: var(--text-primary); }
-
-        iframe { width: 100%; height: 500px; border: 1px solid #ccc; border-radius: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -80,7 +80,7 @@
 
     <div id="forecast-display"></div>
 
-    <iframe id="radarFrame" src="https://radar.weather.gov"></iframe>
+    <div id="radarMap"></div>
 
     <div id="detailed-forecast">
         <h3>Detailed 7-Day Outlook</h3>
@@ -88,10 +88,11 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     let currentDisplayName = "";
+    let map, radarLayer;
 
-    // Load preferences on startup
     window.onload = function() {
         if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         renderFavorites();
@@ -110,12 +111,17 @@
         localStorage.setItem('theme', next);
     }
 
-    function tryAutoLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude),
-                () => { document.getElementById('status').innerText = "Please search for a location."; }
-            );
+    async function tryAutoLocation() {
+        document.getElementById('status').innerText = "Locating...";
+        try {
+            // Using a high-reliability IP lookup for instant location
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.city) {
+                fetchWeatherByCoords(data.latitude, data.longitude, `${data.city}, ${data.region}`);
+            } else { throw new Error(); }
+        } catch {
+            document.getElementById('status').innerText = "Please search for a location.";
         }
     }
 
@@ -141,26 +147,45 @@
         }
     }
 
+    // THE LOGO-FREE RADAR FUNCTION
+    function updateRadarMap(lat, lon) {
+        if (map) { map.remove(); }
+        
+        map = L.map('radarMap').setView([lat, lon], 8);
+
+        // Base Map Layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OSM'
+        }).addTo(map);
+
+        // NWS nowCOAST Radar Overlay (Robust & Logo-Free)
+        radarLayer = L.tileLayer.wms("https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms", {
+            layers: 'conus_base_reflectivity_mosaic',
+            format: 'image/png',
+            transparent: true,
+            opacity: 0.6,
+            version: '1.3.0'
+        }).addTo(map);
+    }
+
     async function fetchWeatherByCoords(lat, lon, name = "Current Location") {
         const status = document.getElementById('status');
         const display = document.getElementById('forecast-display');
         const detailList = document.getElementById('detail-list');
-        const radar = document.getElementById('radarFrame');
         
         try {
+            updateRadarMap(lat, lon);
+
             const pointRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
             const pointData = await pointRes.json();
             
-            radar.src = `https://radar.weather.gov/station/${pointData.properties.radarStation.toLowerCase()}/standard`;
-
             const forecastRes = await fetch(pointData.properties.forecast);
             const forecastData = await forecastRes.json();
 
-            // Clear UI
             display.innerHTML = "";
             detailList.innerHTML = "";
 
-            // Render top 5 cards
+            // V4 Grid Cards
             forecastData.properties.periods.slice(0, 5).forEach(p => {
                 display.innerHTML += `
                     <div class="forecast-card">
@@ -171,7 +196,7 @@
                     </div>`;
             });
 
-            // Render Detailed List
+            // V4 Detailed List
             forecastData.properties.periods.forEach(p => {
                 detailList.innerHTML += `
                     <div class="detail-row">
@@ -183,14 +208,14 @@
             status.innerText = `Forecast for: ${name}`;
             document.getElementById('locationInput').value = name;
         } catch (err) {
-            status.innerText = "Error loading NWS data. API might be throttled.";
+            status.innerText = "Error loading NWS data.";
         }
     }
 
+    // Favorites Logic from V4
     function saveToFavorites() {
         const query = document.getElementById('locationInput').value;
         if (!query || query.includes("Searching")) return;
-
         let favs = JSON.parse(localStorage.getItem('weatherFavs')) || [];
         if (!favs.includes(query)) {
             favs.push(query);
@@ -213,7 +238,7 @@
     }
 
     function removeFavorite(event, fav) {
-        event.stopPropagation(); // Prevents clicking 'X' from also triggering the search
+        event.stopPropagation();
         let favs = JSON.parse(localStorage.getItem('weatherFavs')) || [];
         favs = favs.filter(item => item !== fav);
         localStorage.setItem('weatherFavs', JSON.stringify(favs));
