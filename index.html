@@ -2,249 +2,214 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Best Friends Weather</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Best Friends Weather | V5.1</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --bg-color: #eef2f7;
-            --card-bg: #ffffff;
-            --text-primary: #003366;
-            --text-secondary: #333;
-            --accent: #00509d;
-            --shadow: 0 10px 25px rgba(0,0,0,0.1);
+            --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #002855; 
+            --text-sub: #444; --accent: #0056b3; --radius: 12px; --alert-red: #d90429;
         }
-
         [data-theme="dark"] {
-            --bg-color: #1a1a2e;
-            --card-bg: #16213e;
-            --text-primary: #4cc9f0;
-            --text-secondary: #e0e0e0;
-            --accent: #4361ee;
-            --shadow: 0 10px 25px rgba(0,0,0,0.5);
+            --bg-color: #0b132b; --card-bg: #1c2541; --text-main: #6fffe9; 
+            --text-sub: #cbd5e0; --accent: #3a506b; --alert-red: #ff4d6d;
         }
+        body { font-size: 16px; font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-sub); margin: 0; padding: 10px; transition: 0.3s; }
+        .container { max-width: 100%; margin: auto; padding: 15px; background: var(--card-bg); border-radius: var(--radius); text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--bg-color); color: var(--text-secondary); margin: 0; padding: 20px; transition: 0.3s; }
-        .container { max-width: 1000px; margin: auto; background: var(--card-bg); padding: 25px; border-radius: 15px; box-shadow: var(--shadow); text-align: center; }
+        /* ALERT BANNER & MODAL */
+        #alert-banner {
+            display: none; background: var(--alert-red); color: white;
+            padding: 15px; border-radius: var(--radius); margin-bottom: 15px;
+            cursor: pointer; text-align: left; position: relative; font-weight: bold;
+        }
+        #alert-banner::after { content: 'Details ➔'; position: absolute; right: 15px; bottom: 8px; font-size: 0.7rem; opacity: 0.9; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); overflow-y: auto; }
+        .modal-content { background: var(--card-bg); margin: 10% auto; padding: 25px; width: 85%; max-width: 600px; border-radius: var(--radius); text-align: left; }
+        .close-btn { float: right; font-size: 1.8rem; cursor: pointer; color: var(--text-sub); }
+
+        /* RADAR & CONTROLS */
+        #radar-container { position: relative; width: 100%; height: 350px; margin-top: 10px; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(0,0,0,0.1); }
+        #radarMap { width: 100%; height: 100%; z-index: 1; }
+        .radar-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 12px 0 5px; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; }
+        .play-btn { background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        #frame-time { font-size: 0.85rem; font-weight: bold; color: var(--accent); min-width: 85px; }
+
+        /* INTENSITY LEGEND */
+        .radar-legend { margin: 5px 0 20px; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 8px; }
+        .legend-bar { height: 10px; border-radius: 5px; margin-bottom: 5px; background: linear-gradient(to right, #01a000, #ffff00, #ff9000, #ff0000, #d00000, #ffffff); }
+        .legend-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-sub); }
+
+        /* SEARCH & FORECAST */
+        h1 { font-size: 1.6rem; color: var(--text-main); margin: 5px 0; }
+        .search-area { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        input { padding: 14px; border: 2px solid #ddd; border-radius: var(--radius); font-size: 1rem; background: var(--bg-color); color: var(--text-sub); }
+        .btn-search { background: var(--accent); color: white; border: none; padding: 14px; border-radius: var(--radius); font-weight: bold; cursor: pointer; }
         
-        h1 { color: var(--text-primary); margin-bottom: 5px; }
+        #forecast-display { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 15px; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+        .forecast-card { background: rgba(0,0,0,0.03); padding: 12px; border-radius: var(--radius); min-width: 100px; flex-shrink: 0; }
         
-        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .theme-toggle { cursor: pointer; padding: 5px 10px; border-radius: 20px; border: 1px solid #ccc; background: transparent; color: var(--text-secondary); }
+        #detailed-forecast { text-align: left; margin-top: 10px; }
+        .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 0.9rem; }
 
-        .search-area { margin: 20px 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-        input { padding: 12px; width: 250px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; background: var(--card-bg); color: var(--text-secondary); }
-        
-        button { padding: 12px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-search { background: var(--text-primary); color: white; }
-        .btn-fav { background: #ffcc00; color: #333; font-size: 1.2em; }
-        button:hover { opacity: 0.8; }
-
-        #favorites-bar { margin: 10px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; min-height: 30px; }
-        .fav-chip { background: #d1e3ff; color: #003366; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9em; display: flex; align-items: center; gap: 5px; }
-        [data-theme="dark"] .fav-chip { background: #4361ee; color: white; }
-        .remove-fav { color: #ff4d4d; font-weight: bold; margin-left: 5px; cursor: pointer; }
-
-        #status { color: #666; font-style: italic; margin-bottom: 15px; }
-        
-        #forecast-display { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
-        .forecast-card { background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.1); padding: 15px; border-radius: 10px; width: 140px; }
-        [data-theme="dark"] .forecast-card { background: rgba(255,255,255,0.05); }
-
-        /* CLEAN RADAR MAP STYLES */
-        #radarMap { width: 100%; height: 500px; border: 1px solid #ccc; border-radius: 10px; margin-top: 20px; z-index: 1; }
-
-        #detailed-forecast { margin-top: 30px; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto; }
-        .detail-row { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); display: grid; grid-template-columns: 120px 1fr; gap: 15px; }
-        [data-theme="dark"] .detail-row { border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .detail-day { font-weight: bold; color: var(--text-primary); }
+        @media (min-width: 768px) { .container { max-width: 850px; padding: 30px; } .search-area { flex-direction: row; } #radar-container { height: 480px; } #forecast-display { justify-content: center; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="controls">
-        <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Mode</button>
+    <div id="alert-banner" onclick="openAlertModal()"></div>
+
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAlertModal()">&times;</span>
+            <h2 id="modal-title" style="color:var(--alert-red); margin-top:0;">Alert Detail</h2>
+            <div id="modal-body" style="white-space: pre-wrap; margin-top:15px; font-size:0.9rem; line-height:1.5;"></div>
+        </div>
     </div>
-    
-    <h1>🐾 Best Friends Weather</h1>
-    <div id="status">Waking up...</div>
+
+    <header style="display:flex; justify-content: space-between; align-items: center;">
+        <button onclick="toggleTheme()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">🌓</button>
+        <h1>🐾 Best Friends</h1>
+        <div style="width:35px;"></div>
+    </header>
 
     <div class="search-area">
         <input type="text" id="locationInput" placeholder="Zip or City, ST">
-        <button class="btn-search" onclick="handleSearch()">Update</button>
-        <button class="btn-fav" onclick="saveToFavorites()" title="Save to Favorites">★</button>
+        <button class="btn-search" onclick="handleSearch()">Update Weather</button>
     </div>
-
-    <div id="favorites-bar"></div>
 
     <div id="forecast-display"></div>
 
-    <div id="radarMap"></div>
+    <div id="radar-container">
+        <div id="radarMap"></div>
+    </div>
+    
+    <div class="radar-controls">
+        <button class="play-btn" id="playPauseBtn" onclick="toggleRadar()">Play Loop</button>
+        <span id="frame-time">Ready</span>
+    </div>
+
+    <div class="radar-legend">
+        <div class="legend-bar"></div>
+        <div class="legend-labels"><span>Light</span><span>Moderate</span><span>Heavy</span><span>Hail/Ice</span></div>
+    </div>
 
     <div id="detailed-forecast">
-        <h3>Detailed 7-Day Outlook</h3>
+        <h3 style="color:var(--text-main); border-left: 4px solid var(--accent); padding-left: 10px;">7-Day Outlook</h3>
         <div id="detail-list"></div>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let currentDisplayName = "";
-    let map, radarLayer;
-
-    window.onload = function() {
-        if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        renderFavorites();
-        const last = localStorage.getItem('lastLocation');
-        if (last) {
-            getWeather(last);
-        } else {
-            tryAutoLocation();
-        }
-    };
+    let map, radarLayers = [], times = [], currentFrame = 0, loopInterval, isPlaying = false;
 
     function toggleTheme() {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
+        const d = document.documentElement;
+        d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark');
     }
 
-    async function tryAutoLocation() {
-        document.getElementById('status').innerText = "Locating...";
-        try {
-            // Using a high-reliability IP lookup for instant location
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            if (data.city) {
-                fetchWeatherByCoords(data.latitude, data.longitude, `${data.city}, ${data.region}`);
-            } else { throw new Error(); }
-        } catch {
-            document.getElementById('status').innerText = "Please search for a location.";
-        }
-    }
+    // Modal Controls
+    function openAlertModal() { document.getElementById('alertModal').style.display = "block"; }
+    function closeAlertModal() { document.getElementById('alertModal').style.display = "none"; }
+    window.onclick = (e) => { if(e.target == document.getElementById('alertModal')) closeAlertModal(); }
 
     async function handleSearch() {
-        const query = document.getElementById('locationInput').value;
-        if (!query) return;
-        getWeather(query);
+        const q = document.getElementById('locationInput').value;
+        if(!q) return;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=us&q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if(data[0]) fetchWeather(data[0].lat, data[0].lon, data[0].display_name.split(',')[0]);
     }
 
-    async function getWeather(query) {
-        document.getElementById('status').innerText = `Geocoding ${query}...`;
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=us&q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (data.length === 0) throw new Error("Location not found.");
-            
-            const parts = data[0].display_name.split(',');
-            currentDisplayName = parts[0] + (parts[1] ? ", " + parts[1] : "");
-            localStorage.setItem('lastLocation', query);
-            fetchWeatherByCoords(data[0].lat, data[0].lon, currentDisplayName);
-        } catch (err) {
-            document.getElementById('status').innerText = "Error: " + err.message;
+    function toggleRadar() {
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('playPauseBtn');
+        if (isPlaying) {
+            btn.innerText = "Stop Loop";
+            runLoop();
+        } else {
+            btn.innerText = "Play Loop";
+            clearInterval(loopInterval);
         }
     }
 
-    // THE LOGO-FREE RADAR FUNCTION
-    function updateRadarMap(lat, lon) {
-        if (map) { map.remove(); }
-        
-        map = L.map('radarMap').setView([lat, lon], 8);
-
-        // Base Map Layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OSM'
-        }).addTo(map);
-
-        // NWS nowCOAST Radar Overlay (Robust & Logo-Free)
-        radarLayer = L.tileLayer.wms("https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms", {
-            layers: 'conus_base_reflectivity_mosaic',
-            format: 'image/png',
-            transparent: true,
-            opacity: 0.6,
-            version: '1.3.0'
-        }).addTo(map);
+    function runLoop() {
+        clearInterval(loopInterval);
+        loopInterval = setInterval(() => {
+            radarLayers.forEach(l => l.setOpacity(0));
+            radarLayers[currentFrame].setOpacity(0.65);
+            document.getElementById('frame-time').innerText = times[currentFrame];
+            currentFrame = (currentFrame + 1) % radarLayers.length;
+        }, 1000);
     }
 
-    async function fetchWeatherByCoords(lat, lon, name = "Current Location") {
-        const status = document.getElementById('status');
-        const display = document.getElementById('forecast-display');
-        const detailList = document.getElementById('detail-list');
+    async function fetchWeather(lat, lon, name) {
+        const alertBox = document.getElementById('alert-banner');
+        alertBox.style.display = "none";
+
+        if (map) map.remove();
+        clearInterval(loopInterval);
+        isPlaying = false;
+        document.getElementById('playPauseBtn').innerText = "Play Loop";
+
+        map = L.map('radarMap', { zoomControl: false, attributionControl: false }).setView([lat, lon], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        radarLayers = []; times = [];
+        const now = new Date();
+        for(let i=4; i>=0; i--) {
+            let t = new Date(now.getTime() - (i * 15 * 60000));
+            t.setMinutes(Math.floor(t.getMinutes() / 5) * 5); 
+            let iso = t.toISOString().substring(0, 14) + t.toISOString().substring(14,15) + "0:00Z";
+            times.push(t.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+            let l = L.tileLayer.wms("https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms", {
+                layers: 'conus_base_reflectivity_mosaic', format: 'image/png', transparent: true, opacity: 0, time: iso
+            }).addTo(map);
+            radarLayers.push(l);
+        }
         
+        currentFrame = radarLayers.length - 1;
+        radarLayers[currentFrame].setOpacity(0.65);
+        document.getElementById('frame-time').innerText = times[currentFrame];
+
         try {
-            updateRadarMap(lat, lon);
-
-            const pointRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
-            const pointData = await pointRes.json();
+            const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
+            const pData = await pRes.json();
             
-            const forecastRes = await fetch(pointData.properties.forecast);
-            const forecastData = await forecastRes.json();
+            // Check for Alerts
+            const zoneId = pData.properties.forecastZone.split('/').pop();
+            const aRes = await fetch(`https://api.weather.gov/alerts/active/zone/${zoneId}`);
+            const aData = await aRes.json();
+            if(aData.features.length > 0) {
+                const a = aData.features[0].properties;
+                alertBox.innerHTML = `⚠️ ${a.event}<br><small style="font-weight:normal;">${a.headline}</small>`;
+                document.getElementById('modal-title').innerText = a.event;
+                document.getElementById('modal-body').innerText = (a.description || "") + "\n\n" + (a.instruction || "");
+                alertBox.style.display = "block";
+            }
 
-            display.innerHTML = "";
-            detailList.innerHTML = "";
+            const fRes = await fetch(pData.properties.forecast);
+            const fData = await fRes.json();
+            const periods = fData.properties.periods;
 
-            // V4 Grid Cards
-            forecastData.properties.periods.slice(0, 5).forEach(p => {
-                display.innerHTML += `
-                    <div class="forecast-card">
-                        <strong>${p.name}</strong><br>
-                        <img src="${p.icon}" alt="icon" width="40" style="margin:5px 0;"><br>
-                        <span style="font-size:1.1em; font-weight:bold;">${p.temperature}°${p.temperatureUnit}</span><br>
-                        <small style="font-size:0.8em; display:block; margin-top:5px;">${p.shortForecast}</small>
-                    </div>`;
-            });
+            document.getElementById('forecast-display').innerHTML = periods.slice(0, 5).map(p => `
+                <div class="forecast-card">
+                    <div style="font-size:0.75rem; font-weight:bold;">${p.name}</div>
+                    <img src="${p.icon}" width="35" style="margin:8px 0;">
+                    <div style="font-weight:bold; font-size:1.1rem;">${p.temperature}°</div>
+                </div>`).join('');
 
-            // V4 Detailed List
-            forecastData.properties.periods.forEach(p => {
-                detailList.innerHTML += `
-                    <div class="detail-row">
-                        <div class="detail-day">${p.name}</div>
-                        <div class="detail-text">${p.detailedForecast}</div>
-                    </div>`;
-            });
-
-            status.innerText = `Forecast for: ${name}`;
+            document.getElementById('detail-list').innerHTML = periods.map(p => `
+                <div class="detail-row"><strong>${p.name}</strong>: ${p.detailedForecast}</div>`).join('');
+            
             document.getElementById('locationInput').value = name;
-        } catch (err) {
-            status.innerText = "Error loading NWS data.";
-        }
+        } catch(e) { console.error("API error"); }
     }
 
-    // Favorites Logic from V4
-    function saveToFavorites() {
-        const query = document.getElementById('locationInput').value;
-        if (!query || query.includes("Searching")) return;
-        let favs = JSON.parse(localStorage.getItem('weatherFavs')) || [];
-        if (!favs.includes(query)) {
-            favs.push(query);
-            localStorage.setItem('weatherFavs', JSON.stringify(favs));
-            renderFavorites();
-        }
-    }
-
-    function renderFavorites() {
-        const bar = document.getElementById('favorites-bar');
-        const favs = JSON.parse(localStorage.getItem('weatherFavs')) || [];
-        bar.innerHTML = "";
-        favs.forEach(fav => {
-            const chip = document.createElement('div');
-            chip.className = 'fav-chip';
-            chip.innerHTML = `<span onclick="getWeather('${fav}')">${fav}</span> 
-                              <span class="remove-fav" onclick="removeFavorite(event, '${fav}')">×</span>`;
-            bar.appendChild(chip);
-        });
-    }
-
-    function removeFavorite(event, fav) {
-        event.stopPropagation();
-        let favs = JSON.parse(localStorage.getItem('weatherFavs')) || [];
-        favs = favs.filter(item => item !== fav);
-        localStorage.setItem('weatherFavs', JSON.stringify(favs));
-        renderFavorites();
-    }
+    window.onload = () => fetchWeather(37.2185, -80.2314, "Elliston, VA");
 </script>
-
 </body>
 </html>
