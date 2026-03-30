@@ -3,57 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Best Friends Weather | V5.1</title>
+    <title>Best Friends Weather | V5.2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #002855; 
-            --text-sub: #444; --accent: #0056b3; --radius: 12px; --alert-red: #d90429;
+            --bg-color: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; 
+            --text-sub: #475569; --accent: #2563eb; --radius: 16px; --alert-red: #e11d48;
         }
         [data-theme="dark"] {
-            --bg-color: #0b132b; --card-bg: #1c2541; --text-main: #6fffe9; 
-            --text-sub: #cbd5e0; --accent: #3a506b; --alert-red: #ff4d6d;
+            --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; 
+            --text-sub: #94a3b8; --accent: #38bdf8; --alert-red: #fb7185;
         }
-        body { font-size: 16px; font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-sub); margin: 0; padding: 10px; transition: 0.3s; }
-        .container { max-width: 100%; margin: auto; padding: 15px; background: var(--card-bg); border-radius: var(--radius); text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { font-size: 16px; font-family: 'Inter', -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-sub); margin: 0; padding: 10px; transition: 0.3s; }
+        .container { max-width: 100%; margin: auto; padding: 15px; background: var(--card-bg); border-radius: var(--radius); text-align: center; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
 
-        /* ALERT BANNER & MODAL */
+        /* REFINED HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
+        .logo-text { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.025em; margin: 0; }
+        .logo-text span { color: var(--accent); font-weight: 400; }
+
+        /* ALERT SYSTEM */
         #alert-banner {
             display: none; background: var(--alert-red); color: white;
-            padding: 15px; border-radius: var(--radius); margin-bottom: 15px;
-            cursor: pointer; text-align: left; position: relative; font-weight: bold;
+            padding: 12px 15px; border-radius: 12px; margin-bottom: 15px;
+            cursor: pointer; text-align: left; position: relative; font-size: 0.9rem;
         }
-        #alert-banner::after { content: 'Details ➔'; position: absolute; right: 15px; bottom: 8px; font-size: 0.7rem; opacity: 0.9; }
 
-        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); overflow-y: auto; }
-        .modal-content { background: var(--card-bg); margin: 10% auto; padding: 25px; width: 85%; max-width: 600px; border-radius: var(--radius); text-align: left; }
-        .close-btn { float: right; font-size: 1.8rem; cursor: pointer; color: var(--text-sub); }
-
-        /* RADAR & CONTROLS */
-        #radar-container { position: relative; width: 100%; height: 350px; margin-top: 10px; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(0,0,0,0.1); }
-        #radarMap { width: 100%; height: 100%; z-index: 1; }
-        .radar-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 12px 0 5px; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; }
-        .play-btn { background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        #frame-time { font-size: 0.85rem; font-weight: bold; color: var(--accent); min-width: 85px; }
-
-        /* INTENSITY LEGEND */
-        .radar-legend { margin: 5px 0 20px; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 8px; }
-        .legend-bar { height: 10px; border-radius: 5px; margin-bottom: 5px; background: linear-gradient(to right, #01a000, #ffff00, #ff9000, #ff0000, #d00000, #ffffff); }
-        .legend-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-sub); }
-
-        /* SEARCH & FORECAST */
-        h1 { font-size: 1.6rem; color: var(--text-main); margin: 5px 0; }
-        .search-area { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
-        input { padding: 14px; border: 2px solid #ddd; border-radius: var(--radius); font-size: 1rem; background: var(--bg-color); color: var(--text-sub); }
-        .btn-search { background: var(--accent); color: white; border: none; padding: 14px; border-radius: var(--radius); font-weight: bold; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); overflow-y: auto; }
+        .modal-content { background: var(--card-bg); margin: 15% auto; padding: 25px; width: 85%; max-width: 550px; border-radius: var(--radius); text-align: left; }
         
-        #forecast-display { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 15px; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
-        .forecast-card { background: rgba(0,0,0,0.03); padding: 12px; border-radius: var(--radius); min-width: 100px; flex-shrink: 0; }
-        
-        #detailed-forecast { text-align: left; margin-top: 10px; }
-        .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 0.9rem; }
+        /* RADAR & UI */
+        #radar-container { position: relative; width: 100%; height: 350px; margin-top: 10px; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
+        #radarMap { width: 100%; height: 100%; }
+        .radar-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 12px 0 5px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 12px; }
+        .play-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        #frame-time { font-size: 0.85rem; font-weight: 700; color: var(--accent); min-width: 80px; }
 
-        @media (min-width: 768px) { .container { max-width: 850px; padding: 30px; } .search-area { flex-direction: row; } #radar-container { height: 480px; } #forecast-display { justify-content: center; } }
+        .radar-legend { margin: 5px 0 20px; padding: 10px; }
+        .legend-bar { height: 8px; border-radius: 4px; margin-bottom: 6px; background: linear-gradient(to right, #01a000, #ffff00, #ff9000, #ff0000, #d00000, #ffffff); }
+        .legend-labels { display: flex; justify-content: space-between; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; opacity: 0.7; }
+
+        .search-area { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        input { padding: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 1rem; background: var(--bg-color); color: var(--text-sub); }
+        
+        #forecast-display { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 15px; }
+        .forecast-card { background: rgba(0,0,0,0.02); padding: 12px; border-radius: 14px; min-width: 95px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.03); }
+        
+        .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.9rem; line-height: 1.5; }
+
+        @media (min-width: 768px) { .container { max-width: 800px; padding: 35px; } .search-area { flex-direction: row; } #radar-container { height: 450px; } }
     </style>
 </head>
 <body>
@@ -63,28 +61,26 @@
 
     <div id="alertModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeAlertModal()">&times;</span>
-            <h2 id="modal-title" style="color:var(--alert-red); margin-top:0;">Alert Detail</h2>
-            <div id="modal-body" style="white-space: pre-wrap; margin-top:15px; font-size:0.9rem; line-height:1.5;"></div>
+            <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="closeAlertModal()">&times;</span>
+            <h2 id="modal-title" style="color:var(--alert-red); margin-top:0;">Weather Alert</h2>
+            <div id="modal-body"></div>
         </div>
     </div>
 
-    <header style="display:flex; justify-content: space-between; align-items: center;">
-        <button onclick="toggleTheme()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">🌓</button>
-        <h1>🐾 Best Friends Weather</h1>
-        <div style="width:35px;"></div>
+    <header>
+        <button onclick="toggleTheme()" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">🌓</button>
+        <h1 class="logo-text">bestfriends<span>weather</span><span class="paws">🐾</span></h1>
+        <button onclick="smartHome()" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">🏠</button>
     </header>
 
     <div class="search-area">
-        <input type="text" id="locationInput" placeholder="Zip or City, ST">
-        <button class="btn-search" onclick="handleSearch()">Update Weather</button>
+        <input type="text" id="locationInput" placeholder="City or Zip Code">
+        <button onclick="handleSearch()" style="background:var(--text-main); color:white; border:none; padding:14px; border-radius:12px; font-weight:600;">Update</button>
     </div>
 
     <div id="forecast-display"></div>
 
-    <div id="radar-container">
-        <div id="radarMap"></div>
-    </div>
+    <div id="radar-container"><div id="radarMap"></div></div>
     
     <div class="radar-controls">
         <button class="play-btn" id="playPauseBtn" onclick="toggleRadar()">Play Loop</button>
@@ -93,11 +89,11 @@
 
     <div class="radar-legend">
         <div class="legend-bar"></div>
-        <div class="legend-labels"><span>Light</span><span>Moderate</span><span>Heavy</span><span>Hail/Ice</span></div>
+        <div class="legend-labels"><span>Light</span><span>Moderate</span><span>Heavy</span><span>Extreme</span></div>
     </div>
 
-    <div id="detailed-forecast">
-        <h3 style="color:var(--text-main); border-left: 4px solid var(--accent); padding-left: 10px;">7-Day Outlook</h3>
+    <div id="detailed-forecast" style="text-align:left;">
+        <h3 style="font-size:1.1rem; color:var(--text-main);">7-Day Outlook</h3>
         <div id="detail-list"></div>
     </div>
 </div>
@@ -111,10 +107,8 @@
         d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark');
     }
 
-    // Modal Controls
     function openAlertModal() { document.getElementById('alertModal').style.display = "block"; }
     function closeAlertModal() { document.getElementById('alertModal').style.display = "none"; }
-    window.onclick = (e) => { if(e.target == document.getElementById('alertModal')) closeAlertModal(); }
 
     async function handleSearch() {
         const q = document.getElementById('locationInput').value;
@@ -128,7 +122,7 @@
         isPlaying = !isPlaying;
         const btn = document.getElementById('playPauseBtn');
         if (isPlaying) {
-            btn.innerText = "Stop Loop";
+            btn.innerText = "Stop";
             runLoop();
         } else {
             btn.innerText = "Play Loop";
@@ -149,7 +143,6 @@
     async function fetchWeather(lat, lon, name) {
         const alertBox = document.getElementById('alert-banner');
         alertBox.style.display = "none";
-
         if (map) map.remove();
         clearInterval(loopInterval);
         isPlaying = false;
@@ -179,15 +172,21 @@
             const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
             const pData = await pRes.json();
             
-            // Check for Alerts
+            // Multi-Alert Check
             const zoneId = pData.properties.forecastZone.split('/').pop();
             const aRes = await fetch(`https://api.weather.gov/alerts/active/zone/${zoneId}`);
             const aData = await aRes.json();
             if(aData.features.length > 0) {
-                const a = aData.features[0].properties;
-                alertBox.innerHTML = `⚠️ ${a.event}<br><small style="font-weight:normal;">${a.headline}</small>`;
-                document.getElementById('modal-title').innerText = a.event;
-                document.getElementById('modal-body').innerText = (a.description || "") + "\n\n" + (a.instruction || "");
+                const count = aData.features.length;
+                const primary = aData.features[0].properties;
+                alertBox.innerHTML = `⚠️ ${count > 1 ? 'Multiple Alerts Active' : primary.event}<br><small>${primary.headline || 'Tap for details'}</small>`;
+                
+                document.getElementById('modal-body').innerHTML = aData.features.map(f => `
+                    <div style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+                        <h3 style="color:var(--alert-red); margin:0;">${f.properties.event}</h3>
+                        <p style="white-space: pre-wrap; font-size:0.85rem;">${f.properties.description}</p>
+                        <p style="font-weight:bold; font-size:0.8rem;">${f.properties.instruction || ''}</p>
+                    </div>`).join('');
                 alertBox.style.display = "block";
             }
 
@@ -197,16 +196,16 @@
 
             document.getElementById('forecast-display').innerHTML = periods.slice(0, 5).map(p => `
                 <div class="forecast-card">
-                    <div style="font-size:0.75rem; font-weight:bold;">${p.name}</div>
-                    <img src="${p.icon}" width="35" style="margin:8px 0;">
-                    <div style="font-weight:bold; font-size:1.1rem;">${p.temperature}°</div>
+                    <div style="font-size:0.7rem; font-weight:700; opacity:0.8;">${p.name.toUpperCase()}</div>
+                    <img src="${p.icon}" width="32" style="margin:8px 0;">
+                    <div style="font-weight:800; font-size:1.1rem;">${p.temperature}°</div>
                 </div>`).join('');
 
             document.getElementById('detail-list').innerHTML = periods.map(p => `
                 <div class="detail-row"><strong>${p.name}</strong>: ${p.detailedForecast}</div>`).join('');
             
             document.getElementById('locationInput').value = name;
-        } catch(e) { console.error("API error"); }
+        } catch(e) { console.error("Data error"); }
     }
 
     window.onload = () => fetchWeather(37.2185, -80.2314, "Elliston, VA");
