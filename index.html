@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Best Friends Weather | V5.2</title>
+    <title>Best Friends Weather | V6.6</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -15,14 +15,14 @@
             --text-sub: #94a3b8; --accent: #38bdf8; --alert-red: #fb7185;
         }
         body { font-size: 16px; font-family: 'Inter', -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-sub); margin: 0; padding: 10px; transition: 0.3s; }
+        
+        /* V5.2 CONTAINER SIZING */
         .container { max-width: 100%; margin: auto; padding: 15px; background: var(--card-bg); border-radius: var(--radius); text-align: center; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
 
-        /* REFINED HEADER */
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
         .logo-text { font-size: 1.4rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.025em; margin: 0; }
         .logo-text span { color: var(--accent); font-weight: 400; }
 
-        /* ALERT SYSTEM */
         #alert-banner {
             display: none; background: var(--alert-red); color: white;
             padding: 12px 15px; border-radius: 12px; margin-bottom: 15px;
@@ -30,52 +30,67 @@
         }
 
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); overflow-y: auto; }
-        .modal-content { background: var(--card-bg); margin: 15% auto; padding: 25px; width: 85%; max-width: 550px; border-radius: var(--radius); text-align: left; }
+        .modal-content { background: var(--card-bg); margin: 15% auto; padding: 25px; width: 85%; max-width: 550px; border-radius: var(--radius); text-align: left; color: var(--text-main); position: relative; }
         
-        /* RADAR & UI */
+        /* RADAR CONTAINER V5.2 */
         #radar-container { position: relative; width: 100%; height: 350px; margin-top: 10px; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
-        #radarMap { width: 100%; height: 100%; }
+        #radarMap { width: 100%; height: 100%; background: #aacbff; }
+        
         .radar-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 12px 0 5px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 12px; }
-        .play-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .play-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; }
         #frame-time { font-size: 0.85rem; font-weight: 700; color: var(--accent); min-width: 80px; }
 
+        /* RADAR LEGEND V5.2 */
         .radar-legend { margin: 5px 0 20px; padding: 10px; }
         .legend-bar { height: 8px; border-radius: 4px; margin-bottom: 6px; background: linear-gradient(to right, #01a000, #ffff00, #ff9000, #ff0000, #d00000, #ffffff); }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; opacity: 0.7; }
 
         .search-area { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        input { padding: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 1rem; background: var(--bg-color); color: var(--text-sub); }
+        input { padding: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; font-size: 1rem; background: var(--bg-color); color: var(--text-main); }
         
-        #forecast-display { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 15px; }
-        .forecast-card { background: rgba(0,0,0,0.02); padding: 12px; border-radius: 14px; min-width: 95px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.03); }
-        
-        .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.9rem; line-height: 1.5; }
+        #forecast-display { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 15px; scrollbar-width: none; }
+        .forecast-card { 
+            background: rgba(0,0,0,0.02); padding: 12px; border-radius: 14px; min-width: 100px; 
+            flex-shrink: 0; border: 1px solid rgba(0,0,0,0.03); color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+        }
 
-        @media (min-width: 768px) { .container { max-width: 800px; padding: 35px; } .search-area { flex-direction: row; } #radar-container { height: 450px; } }
+        .uv-badge { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; margin-top: 5px; color: #000; cursor: pointer; text-transform: uppercase; }
+        .fish-badge { font-size: 1.4rem; margin-top: 5px; cursor: pointer; }
+
+        .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.9rem; text-align: left; line-height: 1.5; }
+
+        @media (min-width: 768px) { 
+            .container { max-width: 800px; padding: 35px; } 
+            .search-area { flex-direction: row; } 
+            #radar-container { height: 450px; } 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="alert-banner" onclick="openAlertModal()"></div>
+    <div id="alert-banner" onclick="openModal('alertModal')"></div>
 
-    <div id="alertModal" class="modal">
-        <div class="modal-content">
-            <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="closeAlertModal()">&times;</span>
-            <h2 id="modal-title" style="color:var(--alert-red); margin-top:0;">Weather Alert</h2>
-            <div id="modal-body"></div>
-        </div>
-    </div>
+    <div id="infoModal" class="modal"><div class="modal-content">
+        <span style="float:right; cursor:pointer; font-size:1.5rem;" onclick="closeModal('infoModal')">&times;</span>
+        <h2 id="info-title" style="margin-top:0; color:var(--accent);"></h2><div id="info-body"></div>
+    </div></div>
+
+    <div id="alertModal" class="modal"><div class="modal-content">
+        <span style="float:right; cursor:pointer;" onclick="closeModal('alertModal')">&times;</span>
+        <h2 style="color:var(--alert-red)">Active Alerts</h2><div id="modal-body"></div>
+    </div></div>
 
     <header>
         <button onclick="toggleTheme()" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">🌓</button>
-        <h1 class="logo-text">bestfriends<span>weather</span><span class="paws">🐾</span></h1>
+        <h1 class="logo-text">bestfriends<span>weather</span>🐾</h1>
         <button onclick="smartHome()" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">🏠</button>
     </header>
 
     <div class="search-area">
-        <input type="text" id="locationInput" placeholder="City or Zip Code">
-        <button onclick="handleSearch()" style="background:var(--text-main); color:white; border:none; padding:14px; border-radius:12px; font-weight:600;">Update</button>
+        <input type="text" id="locationInput" placeholder="City or Zip">
+        <button onclick="handleSearch()" style="background:var(--text-main); color:white; border:none; padding:14px; border-radius:12px; font-weight:600; cursor:pointer;">Update</button>
     </div>
 
     <div id="forecast-display"></div>
@@ -92,8 +107,8 @@
         <div class="legend-labels"><span>Light</span><span>Moderate</span><span>Heavy</span><span>Extreme</span></div>
     </div>
 
-    <div id="detailed-forecast" style="text-align:left;">
-        <h3 style="font-size:1.1rem; color:var(--text-main);">7-Day Outlook</h3>
+    <div id="detailed-forecast">
+        <h3 style="text-align:left; font-size:1.1rem; color:var(--text-main);">7-Day Outlook</h3>
         <div id="detail-list"></div>
     </div>
 </div>
@@ -101,114 +116,144 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     let map, radarLayers = [], times = [], currentFrame = 0, loopInterval, isPlaying = false;
+    const HOME = { lat: 37.2185, lon: -80.2314, name: "Elliston, VA" };
 
     function toggleTheme() {
         const d = document.documentElement;
         d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark');
     }
 
-    function openAlertModal() { document.getElementById('alertModal').style.display = "block"; }
-    function closeAlertModal() { document.getElementById('alertModal').style.display = "none"; }
+    function smartHome() { fetchWeather(HOME.lat, HOME.lon, HOME.name); }
+    function openModal(id) { document.getElementById(id).style.display = "block"; }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+    function getUVAdvice(val) {
+        if (val <= 2) return { text: "Low", col: "#22c55e", advice: "Safe to be outside; use sunscreen if you burn easily." };
+        if (val <= 5) return { text: "Moderate", col: "#facc15", advice: "Protection needed; wear a hat, sunglasses, and sunscreen." };
+        if (val <= 7) return { text: "High", col: "#f18b00", advice: "Protection essential; seek shade during midday, wear protective clothing, and use sunscreen." };
+        if (val <= 10) return { text: "Very High", col: "#e11d48", advice: "Extra protection needed; avoid sun exposure during midday hours." };
+        return { text: "Extreme", col: "#a855f7", advice: "Take all precautions; unprotected skin can burn in minutes." };
+    }
+
+    function getFishAdvice(score) {
+        if (score >= 8) return { rating: "Excellent", advice: "The bite is on! Perfect pressure and light winds—grab your gear and get to the water ASAP." };
+        if (score >= 6) return { rating: "Good", advice: "Decent conditions. You might have to work for it, but the fish should be active." };
+        if (score >= 4) return { rating: "Fair", advice: "Slow moving. Might be a tough day, but a bad day fishing beats a good day at work!" };
+        return { rating: "Poor", advice: "Rough conditions. High winds or shifting pressure might have the fish hunkered down." };
+    }
+
+    function showInfo(title, text) {
+        document.getElementById('info-title').innerText = title;
+        document.getElementById('info-body').innerHTML = `<p style="line-height:1.6; color:var(--text-sub);">${text}</p>`;
+        openModal('infoModal');
+    }
 
     async function handleSearch() {
         const q = document.getElementById('locationInput').value;
         if(!q) return;
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=us&q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        if(data[0]) fetchWeather(data[0].lat, data[0].lon, data[0].display_name.split(',')[0]);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=us&limit=1&q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            if(data[0]) fetchWeather(data[0].lat, data[0].lon, data[0].display_name.split(',')[0]);
+        } catch(e) { alert("Search failed."); }
+    }
+
+    async function fetchWeather(lat, lon, name) {
+        if (map) map.remove();
+        clearInterval(loopInterval);
+        isPlaying = false;
+        document.getElementById('playPauseBtn').innerText = "Play Loop";
+        document.getElementById('alert-banner').style.display = "none";
+
+        map = L.map('radarMap', { zoomControl: false, attributionControl: false }).setView([lat, lon], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        try {
+            const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
+            const pData = await pRes.json();
+            const [fRes, uvRes] = await Promise.all([
+                fetch(pData.properties.forecast),
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=uv_index_max&timezone=auto`)
+            ]);
+            
+            const fData = await fRes.json();
+            const uvData = await uvRes.json();
+            const periods = fData.properties.periods;
+
+            document.getElementById('forecast-display').innerHTML = periods.slice(0, 6).map((p, i) => {
+                const uvVal = p.isDaytime ? uvData.daily.uv_index_max[Math.floor(i/2)] : 0;
+                const uvObj = getUVAdvice(uvVal);
+                let fishScore = 6;
+                const desc = p.shortForecast.toLowerCase();
+                if (desc.includes("cloudy")) fishScore += 2;
+                if (p.windSpeed.includes("15")) fishScore -= 3;
+                const fishObj = getFishAdvice(fishScore);
+                const fishEmoji = fishScore >= 8 ? '🎣' : (fishScore >= 5 ? '🐟' : '🚫');
+
+                return `
+                    <div class="forecast-card">
+                        <span style="font-size:0.7rem; font-weight:700; opacity:0.8;">${p.name.toUpperCase()}</span>
+                        <img src="${p.icon}" width="32" style="margin:8px 0; border-radius:50%">
+                        <span style="font-size:1.1rem; font-weight:800;">${p.temperature}°</span>
+                        ${p.isDaytime ? `<div class="uv-badge" style="background:${uvObj.col}" onclick="showInfo('UV Index: ${uvObj.text}', '<strong>Level: ${uvVal}</strong><br><br>${uvObj.advice}')">UV ${Math.round(uvVal)}</div>` : '<div style="height:21px"></div>'}
+                        <div class="fish-badge" onclick="showInfo('Fishing: ${fishObj.rating}', '<strong>Score: ${fishScore}/10</strong><br><br>${fishObj.advice}')">${fishEmoji}</div>
+                    </div>`;
+            }).join('');
+
+            document.getElementById('detail-list').innerHTML = periods.map(p => `<div class="detail-row"><strong>${p.name}:</strong> ${p.detailedForecast}</div>`).join('');
+            document.getElementById('locationInput').value = name;
+
+            const zone = pData.properties.forecastZone.split('/').pop();
+            const aRes = await fetch(`https://api.weather.gov/alerts/active/zone/${zone}`);
+            const aData = await aRes.json();
+            if(aData.features.length > 0) {
+                const count = aData.features.length;
+                const primary = aData.features[0].properties;
+                const alertBox = document.getElementById('alert-banner');
+                alertBox.innerHTML = `⚠️ ${count > 1 ? 'Multiple Alerts Active' : primary.event}<br><small>${primary.headline || 'Tap for details'}</small>`;
+                alertBox.style.display = "block";
+                document.getElementById('modal-body').innerHTML = aData.features.map(f => `<h3>${f.properties.event}</h3><p>${f.properties.description}</p>`).join('');
+            }
+            setupRadar(lat, lon);
+        } catch(e) { console.error(e); }
+    }
+
+    function setupRadar(lat, lon) {
+        radarLayers = []; times = [];
+        const baseTime = new Date();
+        baseTime.setMinutes(Math.floor(baseTime.getMinutes() / 15) * 15);
+        for(let i=4; i>=0; i--) {
+            let t = new Date(baseTime.getTime() - (i * 15 * 60000));
+            let iso = t.toISOString().substring(0, 16) + ":00Z";
+            times.push(t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+            let l = L.tileLayer.wms("https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms", {
+                layers: 'conus_base_reflectivity_mosaic', format: 'image/png', transparent: true, opacity: 0, time: iso
+            }).addTo(map);
+            radarLayers.push(l);
+        }
+        currentFrame = radarLayers.length - 1;
+        radarLayers[currentFrame].setOpacity(0.65);
+        document.getElementById('frame-time').innerText = times[currentFrame];
     }
 
     function toggleRadar() {
         isPlaying = !isPlaying;
         const btn = document.getElementById('playPauseBtn');
-        if (isPlaying) {
+        if(isPlaying) {
             btn.innerText = "Stop";
-            runLoop();
+            loopInterval = setInterval(() => {
+                radarLayers.forEach(l => l.setOpacity(0));
+                currentFrame = (currentFrame + 1) % radarLayers.length;
+                radarLayers[currentFrame].setOpacity(0.65);
+                document.getElementById('frame-time').innerText = times[currentFrame];
+            }, 1000);
         } else {
             btn.innerText = "Play Loop";
             clearInterval(loopInterval);
         }
     }
 
-    function runLoop() {
-        clearInterval(loopInterval);
-        loopInterval = setInterval(() => {
-            radarLayers.forEach(l => l.setOpacity(0));
-            radarLayers[currentFrame].setOpacity(0.65);
-            document.getElementById('frame-time').innerText = times[currentFrame];
-            currentFrame = (currentFrame + 1) % radarLayers.length;
-        }, 1000);
-    }
-
-    async function fetchWeather(lat, lon, name) {
-        const alertBox = document.getElementById('alert-banner');
-        alertBox.style.display = "none";
-        if (map) map.remove();
-        clearInterval(loopInterval);
-        isPlaying = false;
-        document.getElementById('playPauseBtn').innerText = "Play Loop";
-
-        map = L.map('radarMap', { zoomControl: false, attributionControl: false }).setView([lat, lon], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        radarLayers = []; times = [];
-        const now = new Date();
-        for(let i=4; i>=0; i--) {
-            let t = new Date(now.getTime() - (i * 15 * 60000));
-            t.setMinutes(Math.floor(t.getMinutes() / 5) * 5); 
-            let iso = t.toISOString().substring(0, 14) + t.toISOString().substring(14,15) + "0:00Z";
-            times.push(t.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-            let l = L.tileLayer.wms("https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms", {
-                layers: 'conus_base_reflectivity_mosaic', format: 'image/png', transparent: true, opacity: 0, time: iso
-            }).addTo(map);
-            radarLayers.push(l);
-        }
-        
-        currentFrame = radarLayers.length - 1;
-        radarLayers[currentFrame].setOpacity(0.65);
-        document.getElementById('frame-time').innerText = times[currentFrame];
-
-        try {
-            const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
-            const pData = await pRes.json();
-            
-            // Multi-Alert Check
-            const zoneId = pData.properties.forecastZone.split('/').pop();
-            const aRes = await fetch(`https://api.weather.gov/alerts/active/zone/${zoneId}`);
-            const aData = await aRes.json();
-            if(aData.features.length > 0) {
-                const count = aData.features.length;
-                const primary = aData.features[0].properties;
-                alertBox.innerHTML = `⚠️ ${count > 1 ? 'Multiple Alerts Active' : primary.event}<br><small>${primary.headline || 'Tap for details'}</small>`;
-                
-                document.getElementById('modal-body').innerHTML = aData.features.map(f => `
-                    <div style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
-                        <h3 style="color:var(--alert-red); margin:0;">${f.properties.event}</h3>
-                        <p style="white-space: pre-wrap; font-size:0.85rem;">${f.properties.description}</p>
-                        <p style="font-weight:bold; font-size:0.8rem;">${f.properties.instruction || ''}</p>
-                    </div>`).join('');
-                alertBox.style.display = "block";
-            }
-
-            const fRes = await fetch(pData.properties.forecast);
-            const fData = await fRes.json();
-            const periods = fData.properties.periods;
-
-            document.getElementById('forecast-display').innerHTML = periods.slice(0, 5).map(p => `
-                <div class="forecast-card">
-                    <div style="font-size:0.7rem; font-weight:700; opacity:0.8;">${p.name.toUpperCase()}</div>
-                    <img src="${p.icon}" width="32" style="margin:8px 0;">
-                    <div style="font-weight:800; font-size:1.1rem;">${p.temperature}°</div>
-                </div>`).join('');
-
-            document.getElementById('detail-list').innerHTML = periods.map(p => `
-                <div class="detail-row"><strong>${p.name}</strong>: ${p.detailedForecast}</div>`).join('');
-            
-            document.getElementById('locationInput').value = name;
-        } catch(e) { console.error("Data error"); }
-    }
-
-    window.onload = () => fetchWeather(37.2185, -80.2314, "Elliston, VA");
+    window.onload = () => smartHome();
 </script>
 </body>
 </html>
