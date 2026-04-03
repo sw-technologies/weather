@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Best Friends Weather | V6.6</title>
+    <title>Best Friends Weather | V6.7</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -16,7 +16,6 @@
         }
         body { font-size: 16px; font-family: 'Inter', -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-sub); margin: 0; padding: 10px; transition: 0.3s; }
         
-        /* V5.2 CONTAINER SIZING */
         .container { max-width: 100%; margin: auto; padding: 15px; background: var(--card-bg); border-radius: var(--radius); text-align: center; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
 
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
@@ -30,9 +29,8 @@
         }
 
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); overflow-y: auto; }
-        .modal-content { background: var(--card-bg); margin: 15% auto; padding: 25px; width: 85%; max-width: 550px; border-radius: var(--radius); text-align: left; color: var(--text-main); position: relative; }
+        .modal-content { background: var(--card-bg); margin: 5% auto; padding: 25px; width: 85%; max-width: 650px; border-radius: var(--radius); text-align: left; color: var(--text-main); position: relative; }
         
-        /* RADAR CONTAINER V5.2 */
         #radar-container { position: relative; width: 100%; height: 350px; margin-top: 10px; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
         #radarMap { width: 100%; height: 100%; background: #aacbff; }
         
@@ -40,7 +38,6 @@
         .play-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; }
         #frame-time { font-size: 0.85rem; font-weight: 700; color: var(--accent); min-width: 80px; }
 
-        /* RADAR LEGEND V5.2 */
         .radar-legend { margin: 5px 0 20px; padding: 10px; }
         .legend-bar { height: 8px; border-radius: 4px; margin-bottom: 6px; background: linear-gradient(to right, #01a000, #ffff00, #ff9000, #ff0000, #d00000, #ffffff); }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; opacity: 0.7; }
@@ -59,6 +56,10 @@
         .fish-badge { font-size: 1.4rem; margin-top: 5px; cursor: pointer; }
 
         .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.9rem; text-align: left; line-height: 1.5; }
+
+        /* AFD Styling */
+        .afd-text { white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.4; background: rgba(0,0,0,0.03); padding: 15px; border-radius: 8px; color: var(--text-main); overflow-x: auto; }
+        #afd-btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; font-size: 0.8rem; }
 
         @media (min-width: 768px) { 
             .container { max-width: 800px; padding: 35px; } 
@@ -108,7 +109,10 @@
     </div>
 
     <div id="detailed-forecast">
-        <h3 style="text-align:left; font-size:1.1rem; color:var(--text-main);">7-Day Outlook</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin:0; font-size:1.1rem; color:var(--text-main);">7-Day Outlook</h3>
+            <button id="afd-btn" onclick="fetchAFD()">Loading Discussion...</button>
+        </div>
         <div id="detail-list"></div>
     </div>
 </div>
@@ -116,6 +120,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     let map, radarLayers = [], times = [], currentFrame = 0, loopInterval, isPlaying = false;
+    let currentOffice = ''; // Tracking the active WFO
     const HOME = { lat: 37.2185, lon: -80.2314, name: "Elliston, VA" };
 
     function toggleTheme() {
@@ -144,7 +149,7 @@
 
     function showInfo(title, text) {
         document.getElementById('info-title').innerText = title;
-        document.getElementById('info-body').innerHTML = `<p style="line-height:1.6; color:var(--text-sub);">${text}</p>`;
+        document.getElementById('info-body').innerHTML = `<div style="line-height:1.6; color:var(--text-sub);">${text}</div>`;
         openModal('infoModal');
     }
 
@@ -171,6 +176,13 @@
         try {
             const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
             const pData = await pRes.json();
+
+            // UPDATE OFFICE ID FOR AFD
+            currentOffice = pData.properties.forecastOffice.split('/').pop();
+            const afdBtn = document.getElementById('afd-btn');
+            afdBtn.style.display = "block";
+            afdBtn.innerText = `${currentOffice} Discussion`;
+
             const [fRes, uvRes] = await Promise.all([
                 fetch(pData.properties.forecast),
                 fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=uv_index_max&timezone=auto`)
@@ -218,11 +230,37 @@
         } catch(e) { console.error(e); }
     }
 
+    async function fetchAFD() {
+        if (!currentOffice) return;
+        const btn = document.getElementById('afd-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "Fetching...";
+
+        try {
+            const listRes = await fetch(`https://api.weather.gov/products/types/AFD/locations/${currentOffice}`);
+            const listData = await listRes.json();
+            
+            if (listData['@graph'] && listData['@graph'].length > 0) {
+                const productId = listData['@graph'][0].id;
+                const productRes = await fetch(`https://api.weather.gov/products/${productId}`);
+                const productData = await productRes.json();
+                
+                const formatted = `<div class="afd-text">${productData.productText}</div>`;
+                showInfo(`${currentOffice} Forecast Discussion`, formatted);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Could not load discussion.");
+        } finally {
+            btn.innerText = originalText;
+        }
+    }
+
     function setupRadar(lat, lon) {
         radarLayers = []; times = [];
         const baseTime = new Date();
         baseTime.setMinutes(Math.floor(baseTime.getMinutes() / 15) * 15);
-        for(let i=4; i>=0; i--) {
+        for(let i=8; i>=0; i--) {
             let t = new Date(baseTime.getTime() - (i * 15 * 60000));
             let iso = t.toISOString().substring(0, 16) + ":00Z";
             times.push(t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
