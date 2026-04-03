@@ -121,16 +121,17 @@
 <script>
     let map, radarLayers = [], times = [], currentFrame = 0, loopInterval, isPlaying = false;
     let currentOffice = ''; 
-    const FALLBACK = { lat: 37.2185, lon: -80.2314, name: "Elliston, VA" };
+    // TEST FALLBACK: Washington, DC
+    const TEST_FALLBACK = { lat: 38.8951, lon: -77.0364, name: "Washington, DC" };
 
     function toggleTheme() {
         const d = document.documentElement;
         d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark');
     }
 
-    function smartHome() { fetchWeather(FALLBACK.lat, FALLBACK.lon, FALLBACK.name); }
+    function smartHome() { fetchWeather(TEST_FALLBACK.lat, TEST_FALLBACK.lon, TEST_FALLBACK.name); }
     function openModal(id) { document.getElementById(id).style.display = "block"; }
-    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+    function closeModal(id) { document.getElementById(id).style.none = "none"; }
 
     function getUVAdvice(val) {
         if (val <= 2) return { text: "Low", col: "#22c55e", advice: "Safe to be outside; use sunscreen if you burn easily." };
@@ -171,11 +172,7 @@
         document.getElementById('alert-banner').style.display = "none";
 
         map = L.map('radarMap', { zoomControl: false, attributionControl: false }).setView([lat, lon], 8);
-        
-        // Fix: Added className to identify app origin to tile servers
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            className: 'best-friends-weather-tile'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         try {
             const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
@@ -238,16 +235,13 @@
         const btn = document.getElementById('afd-btn');
         const originalText = btn.innerText;
         btn.innerText = "Fetching...";
-
         try {
             const listRes = await fetch(`https://api.weather.gov/products/types/AFD/locations/${currentOffice}`);
             const listData = await listRes.json();
-            
             if (listData['@graph'] && listData['@graph'].length > 0) {
                 const productId = listData['@graph'][0].id;
                 const productRes = await fetch(`https://api.weather.gov/products/${productId}`);
                 const productData = await productRes.json();
-                
                 const formatted = `<div class="afd-text">${productData.productText}</div>`;
                 showInfo(`${currentOffice} Forecast Discussion`, formatted);
             }
@@ -294,23 +288,24 @@
         }
     }
 
-    // GEOLOCATION ENTRY POINT
+    // UPDATED GEOLOCATION BOOTSTRAP
     window.onload = () => {
+        console.log("Checking Geolocation...");
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    // Success: Use mobile/browser location
-                    fetchWeather(position.coords.latitude, position.coords.longitude, "Local Weather");
+                (pos) => {
+                    console.log("Location obtained.");
+                    fetchWeather(pos.coords.latitude, pos.coords.longitude, "Local Weather");
                 },
-                (error) => {
-                    // Fail or Deny: Fallback to Elliston
-                    console.warn("Location denied, defaulting to Elliston.");
+                (err) => {
+                    console.warn(`Geolocation Error (${err.code}): ${err.message}`);
+                    console.log("Falling back to Washington, DC.");
                     smartHome();
                 },
-                { timeout: 10000 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         } else {
-            // Browser doesn't support Geolocation
+            console.log("Geolocation not supported. Using DC.");
             smartHome();
         }
     };
