@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Best Friends Weather | V6.7</title>
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>Best Friends Weather | V6.8</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -57,7 +58,6 @@
 
         .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.9rem; text-align: left; line-height: 1.5; }
 
-        /* AFD Styling */
         .afd-text { white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.4; background: rgba(0,0,0,0.03); padding: 15px; border-radius: 8px; color: var(--text-main); overflow-x: auto; }
         #afd-btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; font-size: 0.8rem; }
 
@@ -120,15 +120,15 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     let map, radarLayers = [], times = [], currentFrame = 0, loopInterval, isPlaying = false;
-    let currentOffice = ''; // Tracking the active WFO
-    const HOME = { lat: 37.2185, lon: -80.2314, name: "Elliston, VA" };
+    let currentOffice = ''; 
+    const FALLBACK = { lat: 37.2185, lon: -80.2314, name: "Elliston, VA" };
 
     function toggleTheme() {
         const d = document.documentElement;
         d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark');
     }
 
-    function smartHome() { fetchWeather(HOME.lat, HOME.lon, HOME.name); }
+    function smartHome() { fetchWeather(FALLBACK.lat, FALLBACK.lon, FALLBACK.name); }
     function openModal(id) { document.getElementById(id).style.display = "block"; }
     function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
@@ -171,13 +171,16 @@
         document.getElementById('alert-banner').style.display = "none";
 
         map = L.map('radarMap', { zoomControl: false, attributionControl: false }).setView([lat, lon], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // Fix: Added className to identify app origin to tile servers
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            className: 'best-friends-weather-tile'
+        }).addTo(map);
 
         try {
             const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
             const pData = await pRes.json();
 
-            // UPDATE OFFICE ID FOR AFD
             currentOffice = pData.properties.forecastOffice.split('/').pop();
             const afdBtn = document.getElementById('afd-btn');
             afdBtn.style.display = "block";
@@ -291,7 +294,26 @@
         }
     }
 
-    window.onload = () => smartHome();
+    // GEOLOCATION ENTRY POINT
+    window.onload = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // Success: Use mobile/browser location
+                    fetchWeather(position.coords.latitude, position.coords.longitude, "Local Weather");
+                },
+                (error) => {
+                    // Fail or Deny: Fallback to Elliston
+                    console.warn("Location denied, defaulting to Elliston.");
+                    smartHome();
+                },
+                { timeout: 10000 }
+            );
+        } else {
+            // Browser doesn't support Geolocation
+            smartHome();
+        }
+    };
 </script>
 </body>
 </html>
