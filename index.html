@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="referrer" content="no-referrer-when-downgrade">
-    <title>Best Friends Weather | V6.8</title>
+    <title>Best Friends Weather | V6.7</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -58,6 +57,7 @@
 
         .detail-row { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.9rem; text-align: left; line-height: 1.5; }
 
+        /* AFD Styling */
         .afd-text { white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.4; background: rgba(0,0,0,0.03); padding: 15px; border-radius: 8px; color: var(--text-main); overflow-x: auto; }
         #afd-btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; font-size: 0.8rem; }
 
@@ -120,18 +120,17 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     let map, radarLayers = [], times = [], currentFrame = 0, loopInterval, isPlaying = false;
-    let currentOffice = ''; 
-    // TEST FALLBACK: Washington, DC
-    const TEST_FALLBACK = { lat: 38.8951, lon: -77.0364, name: "Washington, DC" };
+    let currentOffice = ''; // Tracking the active WFO
+    const HOME = { lat: 37.0685, lon: -80.4493, name: "Riner, VA" };
 
     function toggleTheme() {
         const d = document.documentElement;
         d.getAttribute('data-theme') === 'dark' ? d.removeAttribute('data-theme') : d.setAttribute('data-theme', 'dark');
     }
 
-    function smartHome() { fetchWeather(TEST_FALLBACK.lat, TEST_FALLBACK.lon, TEST_FALLBACK.name); }
+    function smartHome() { fetchWeather(HOME.lat, HOME.lon, HOME.name); }
     function openModal(id) { document.getElementById(id).style.display = "block"; }
-    function closeModal(id) { document.getElementById(id).style.none = "none"; }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
     function getUVAdvice(val) {
         if (val <= 2) return { text: "Low", col: "#22c55e", advice: "Safe to be outside; use sunscreen if you burn easily." };
@@ -178,6 +177,7 @@
             const pRes = await fetch(`https://api.weather.gov/points/${parseFloat(lat).toFixed(4)},${parseFloat(lon).toFixed(4)}`);
             const pData = await pRes.json();
 
+            // UPDATE OFFICE ID FOR AFD
             currentOffice = pData.properties.forecastOffice.split('/').pop();
             const afdBtn = document.getElementById('afd-btn');
             afdBtn.style.display = "block";
@@ -235,13 +235,16 @@
         const btn = document.getElementById('afd-btn');
         const originalText = btn.innerText;
         btn.innerText = "Fetching...";
+
         try {
             const listRes = await fetch(`https://api.weather.gov/products/types/AFD/locations/${currentOffice}`);
             const listData = await listRes.json();
+            
             if (listData['@graph'] && listData['@graph'].length > 0) {
                 const productId = listData['@graph'][0].id;
                 const productRes = await fetch(`https://api.weather.gov/products/${productId}`);
                 const productData = await productRes.json();
+                
                 const formatted = `<div class="afd-text">${productData.productText}</div>`;
                 showInfo(`${currentOffice} Forecast Discussion`, formatted);
             }
@@ -288,27 +291,7 @@
         }
     }
 
-    // UPDATED GEOLOCATION BOOTSTRAP
-    window.onload = () => {
-        console.log("Checking Geolocation...");
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    console.log("Location obtained.");
-                    fetchWeather(pos.coords.latitude, pos.coords.longitude, "Local Weather");
-                },
-                (err) => {
-                    console.warn(`Geolocation Error (${err.code}): ${err.message}`);
-                    console.log("Falling back to Washington, DC.");
-                    smartHome();
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-            );
-        } else {
-            console.log("Geolocation not supported. Using DC.");
-            smartHome();
-        }
-    };
+    window.onload = () => smartHome();
 </script>
 </body>
 </html>
